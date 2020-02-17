@@ -1,17 +1,44 @@
+import {
+    kGetFileInfoReq,
+    kDownloadFileReq,
+    kGetFileInfoRsp,
+    kFileData,
+    kProtoHttp,
+    kProtoWebsocket,
+    kInitDecoderReq,
+    kUninitDecoderReq,
+    kOpenDecoderReq,
+    kCloseDecoderReq,
+    kFeedDataReq,
+    kStartDecodingReq,
+    kPauseDecodingReq,
+    kSeekToReq,
+    kInitDecoderRsp,
+    kOpenDecoderRsp,
+    kVideoFrame,
+    kAudioFrame,
+    kDecodeFinishedEvt,
+    kRequestDataEvt,
+    kSeekToRsp,
+    Logger,
+} from './common.mjs';
+import { WebGLPlayer } from './webgl.js';
+import { PCMPlayer } from './pcm-player.js';
+
 //Decoder states.
-const decoderStateIdle          = 0;
-const decoderStateInitializing  = 1;
-const decoderStateReady         = 2;
-const decoderStateFinished      = 3;
+export const decoderStateIdle          = 0;
+export const decoderStateInitializing  = 1;
+export const decoderStateReady         = 2;
+export const decoderStateFinished      = 3;
 
 //Player states.
-const playerStateIdle           = 0;
-const playerStatePlaying        = 1;
-const playerStatePausing        = 2;
+export const playerStateIdle           = 0;
+export const playerStatePlaying        = 1;
+export const playerStatePausing        = 2;
 
 //Constant.
-const maxBufferTimeLength       = 1.0;
-const downloadSpeedByteRateCoef = 2.0;
+export const maxBufferTimeLength       = 1.0;
+export const downloadSpeedByteRateCoef = 2.0;
 
 String.prototype.startWith = function(str) {
     var reg = new RegExp("^" + str);
@@ -25,7 +52,7 @@ function FileInfo(url) {
     this.chunkSize = 65536;
 }
 
-function Player() {
+export function Player() {
     this.fileInfo           = null;
     this.pcmPlayer          = null;
     this.canvas             = null;
@@ -77,7 +104,8 @@ function Player() {
 
 Player.prototype.initDownloadWorker = function () {
     var self = this;
-    this.downloadWorker = new Worker("downloader.js");
+    // this.downloadWorker = new Worker("downloader.worker.mjs", { type: "module" });
+    this.downloadWorker = new Worker("downloader.worker.js");
     this.downloadWorker.onmessage = function (evt) {
         var objData = evt.data;
         switch (objData.t) {
@@ -93,7 +121,8 @@ Player.prototype.initDownloadWorker = function () {
 
 Player.prototype.initDecodeWorker = function () {
     var self = this;
-    this.decodeWorker = new Worker("decoder.js");
+    // this.decodeWorker = new Worker("decoder.worker.mjs", { type: "module" });
+    this.decodeWorker = new Worker("decoder.worker.js");
     this.decodeWorker.onmessage = function (evt) {
         var objData = evt.data;
         switch (objData.t) {
@@ -868,7 +897,7 @@ Player.prototype.displayLoop = function() {
     // we need to render more frames in one loop, otherwise display
     // fps won't catch up with source fps, leads to memory increasing,
     // set to 2 now.
-    for (i = 0; i < 2; ++i) {
+    for (let i = 0; i < 2; ++i) {
         var frame = this.frameBuffer[0];
         switch (frame.t) {
             case kAudioFrame:
@@ -1022,7 +1051,7 @@ Player.prototype.formatTime = function (s) {
     var h = Math.floor(s / 3600) < 10 ? '0' + Math.floor(s / 3600) : Math.floor(s / 3600);
     var m = Math.floor((s / 60 % 60)) < 10 ? '0' + Math.floor((s / 60 % 60)) : Math.floor((s / 60 % 60));
     var s = Math.floor((s % 60)) < 10 ? '0' + Math.floor((s % 60)) : Math.floor((s % 60));
-    return result = h + ":" + m + ":" + s;
+    return h + ":" + m + ":" + s;
 };
 
 Player.prototype.reportPlayError = function (error, status, message) {

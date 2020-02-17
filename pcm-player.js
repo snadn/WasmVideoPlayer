@@ -1,4 +1,4 @@
-function PCMPlayer(option) {
+export function PCMPlayer(option) {
     this.init(option);
 }
 
@@ -113,7 +113,7 @@ PCMPlayer.prototype.flush = function() {
             offset += this.option.channels;
         }
     }
-    
+
     if (this.startTime < this.audioCtx.currentTime) {
         this.startTime = this.audioCtx.currentTime;
     }
