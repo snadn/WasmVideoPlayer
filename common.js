@@ -55,7 +55,7 @@ Logger.prototype.log = function (line) {
 }
 
 Logger.prototype.logError = function (line) {
-    console.log("[" + this.currentTimeStr() + "][" + this.module + "][ER] " + line);
+    console.error("[" + this.currentTimeStr() + "][" + this.module + "][ER] " + line);
 }
 
 Logger.prototype.logInfo = function (line) {
