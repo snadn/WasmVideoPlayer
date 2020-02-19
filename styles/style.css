@@ -1,3 +1,10 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-bottom: 60px;
+}
+
 .sideBar {
     width: 852px;
     height: 28px;
@@ -26,11 +33,6 @@
     height: 536px;
     background-color: white;
     border: 2px solid rgba(0, 0, 0, 0.9);
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%,-50%);
-    z-index: 10;
 }
 
 #timeTrack {
@@ -57,7 +59,7 @@
     top: 0;
     left: 0;
     bottom: 0;
-    right: 0; 
+    right: 0;
     z-index: 999;
 }
 

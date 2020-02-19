@@ -1,3 +1,4 @@
+import Emitter from './emitter.mjs';
 import {
     kGetFileInfoReq,
     kDownloadFileReq,
@@ -53,12 +54,18 @@ function FileInfo(url) {
 }
 
 export function Player() {
+    const emitter = new Emitter();
+    this.on = (...args) => emitter.on(...args);
+    this.emit = (...args) => emitter.emit(...args);
+    this.once = (...args) => emitter.once(...args);
+
     this.fileInfo           = null;
     this.pcmPlayer          = null;
     this.canvas             = null;
     this.webglPlayer        = null;
     this.callback           = null;
     this.waitHeaderLength   = 524288;
+    this.currentTime        = 0;
     this.duration           = 0;
     this.pixFmt             = 0;
     this.videoWidth         = 0;
@@ -256,6 +263,7 @@ Player.prototype.play = function (url, canvas, callback, waitHeaderLength, isStr
 
         this.buffering = true;
         this.showLoading();
+        this.emit('playing');
     } while (false);
 
     return ret;
@@ -284,6 +292,8 @@ Player.prototype.pauseStream = function () {
         e: 0,
         m: "Success"
     };
+
+    this.emit('pause');
 
     return ret;
 }
@@ -323,6 +333,8 @@ Player.prototype.pause = function () {
         m: "Success"
     };
 
+    this.emit('pause');
+
     return ret;
 };
 
@@ -347,6 +359,9 @@ Player.prototype.resumeStream = function () {
         e: 0,
         m: "Success"
     };
+
+    this.emit('play');
+    this.emit('playing');
 
     return ret;
 }
@@ -392,6 +407,10 @@ Player.prototype.resume = function (fromSeek) {
         e: 0,
         m: "Success"
     };
+
+    this.emit('play');
+    this.emit('playing');
+
     return ret;
 };
 
@@ -419,6 +438,7 @@ Player.prototype.stop = function () {
     this.canvas             = null;
     this.webglPlayer        = null;
     this.callback           = null;
+    this.currentTime        = 0;
     this.duration           = 0;
     this.pixFmt             = 0;
     this.videoWidth         = 0;
@@ -465,6 +485,8 @@ Player.prototype.stop = function () {
         this.fetchController = null;
     }
 
+    this.emit('ended');
+
     return ret;
 };
 
@@ -497,12 +519,8 @@ Player.prototype.seekTo = function(ms) {
     this.urgent = true;
     this.seekReceivedLen = 0;
     this.startBuffering();
-};
 
-Player.prototype.fullscreen = function () {
-    if (this.webglPlayer) {
-        this.webglPlayer.fullscreen();
-    }
+    this.emit('seeking');
 };
 
 Player.prototype.getState = function () {
@@ -649,6 +667,7 @@ Player.prototype.onOpenDecoder = function (objData) {
     if (objData.e == 0) {
         this.onVideoParam(objData.v);
         this.onAudioParam(objData.a);
+        this.emit('durationchange');
         this.decoderState = decoderStateReady;
         this.logger.logInfo("Decoder ready now.");
         this.startDecoding();
@@ -850,6 +869,7 @@ Player.prototype.onSeekToRsp = function (ret) {
     if (ret != 0) {
         this.justSeeked = false;
         this.seeking = false;
+        this.emit('seeked');
     }
 };
 
@@ -961,6 +981,7 @@ Player.prototype.downloadOneChunk = function () {
     if (start >= this.fileInfo.size) {
         this.logger.logError("Reach file end.");
         this.stopDownloadTimer();
+        this.emit('canplaythrough');
         return;
     }
 
@@ -1020,6 +1041,16 @@ Player.prototype.stopTrackTimer = function () {
 Player.prototype.updateTrackTime = function () {
     if (this.playerState == playerStatePlaying && this.pcmPlayer) {
         var currentPlayTime = this.pcmPlayer.getTimestamp() + this.beginTimeOffset;
+
+        this.currentTime = currentPlayTime;
+        this.emit('timeupdate', currentPlayTime);
+
+        // TODO: 不属性代码结构，暂时在此处理
+        if (currentPlayTime * 1000 > this.duration) {
+            this.stop();
+            return;
+        }
+
         if (this.timeTrack) {
             this.timeTrack.value = 1000 * currentPlayTime;
         }

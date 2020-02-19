@@ -117,32 +117,3 @@ WebGLPlayer.prototype.renderFrame = function (videoFrame, width, height, uOffset
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 };
-
-WebGLPlayer.prototype.fullscreen = function () {
-	  var canvas = this.canvas;
-    if (canvas.RequestFullScreen) {
-        canvas.RequestFullScreen();
-    } else if (canvas.webkitRequestFullScreen) {
-        canvas.webkitRequestFullScreen();
-    } else if (canvas.mozRequestFullScreen) {
-        canvas.mozRequestFullScreen();
-    } else if (canvas.msRequestFullscreen) {
-        canvas.msRequestFullscreen();
-    } else {
-        alert("This browser doesn't supporter fullscreen");
-    }
-};
-
-WebGLPlayer.prototype.exitfullscreen = function (){
-    if (document.exitFullscreen) {
-        document.exitFullscreen();
-    } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-    } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen();
-    } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
-    } else {
-        alert("Exit fullscreen doesn't work");
-    }
-}
