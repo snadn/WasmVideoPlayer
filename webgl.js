@@ -25,6 +25,11 @@ Texture.prototype.fill = function (width, height, data) {
 
 export function WebGLPlayer(canvas, options) {
     this.canvas = canvas;
+    const rect = this.canvas.getBoundingClientRect();
+    this.width = rect.width;
+    this.height = rect.height;
+    this.canvas.width = rect.width;
+    this.canvas.height = rect.height;
     this.gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
     this.initGL(options);
 }
@@ -107,7 +112,8 @@ WebGLPlayer.prototype.renderFrame = function (videoFrame, width, height, uOffset
     }
 
     var gl = this.gl;
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    // console.log(this.width, this.height, width, height)
+    gl.viewport(0, 0, this.width, this.height);
     gl.clearColor(0.0, 0.0, 0.0, 0.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 

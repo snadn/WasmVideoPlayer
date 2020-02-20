@@ -20,11 +20,16 @@ var defaultProtos = {
         stream: true,
     }
 };
-let inputUrl = document.getElementById("inputUrl");
+const inputUrl = document.getElementById("inputUrl");
 inputUrl.value = defaultProtos["http"]["url"];
 
+const el = document.querySelector('.canvasDiv');
+
 //Player object.
-const player = new Player();
+const player = new Player({
+    el,
+    // src: /* 'video/C31-1.mp4', //  */defaultProtos.http.url,
+});
 
 var loadingDiv = document.getElementById("loading");
 player.setLoadingDiv(loadingDiv);
@@ -44,11 +49,16 @@ player.on('ended', () => {
     var el = document.getElementById("btnPlayVideo");
     el.src = "img/play.png";
 });
+player.on('error', (e) => {
+    console.log("play error " + e.error + " status " + e.status + ".");
+    if (e.error == 1) {
+        logger.logInfo("Finished.");
+    }
+});
+
 var timeTrack = document.getElementById("timeTrack");
 var timeLabel = document.getElementById("timeLabel");
 player.setTrack(timeTrack, timeLabel);
-
-const canvas = document.getElementById('playCanvas');
 
 function playVideo() {
     var protoList = document.getElementById("protocol");
@@ -59,17 +69,8 @@ function playVideo() {
 
     var currentState = player.getState();
     if (currentState != playerStatePlaying) {
-        if (!canvas) {
-            logger.logError("No Canvas with id " + canvasId + "!");
-            return false;
-        }
-
-        player.play(url, canvas, function(e) {
-            console.log("play error " + e.error + " status " + e.status + ".");
-            if (e.error == 1) {
-                logger.logInfo("Finished.");
-            }
-        }, protoObj.waitLength, protoObj.stream);
+        player.src = url;
+        player.play(/* url, protoObj.waitLength, protoObj.stream */);
     } else {
         player.pause();
     }
@@ -82,14 +83,14 @@ function stopVideo() {
 }
 
 function fullscreen() {
-    if (canvas.RequestFullScreen) {
-        canvas.RequestFullScreen();
-    } else if (canvas.webkitRequestFullScreen) {
-        canvas.webkitRequestFullScreen();
-    } else if (canvas.mozRequestFullScreen) {
-        canvas.mozRequestFullScreen();
-    } else if (canvas.msRequestFullscreen) {
-        canvas.msRequestFullscreen();
+    if (el.RequestFullScreen) {
+        el.RequestFullScreen();
+    } else if (el.webkitRequestFullScreen) {
+        el.webkitRequestFullScreen();
+    } else if (el.mozRequestFullScreen) {
+        el.mozRequestFullScreen();
+    } else if (el.msRequestFullscreen) {
+        el.msRequestFullscreen();
     } else {
         alert("This browser doesn't supporter fullscreen");
     }
@@ -101,6 +102,9 @@ function onSelectProto() {
     var protoObj = defaultProtos[proto];
     var inputUrl = document.getElementById("inputUrl");
     inputUrl.value = protoObj["url"];
+
+    player.src = protoObj.url;
+    player.isStream = protoObj.stream;
 }
 
 Object.assign(window, {
@@ -108,4 +112,5 @@ Object.assign(window, {
     stopVideo,
     fullscreen,
     onSelectProto,
+    player,
 })

@@ -53,17 +53,12 @@ function FileInfo(url) {
     this.chunkSize = 65536;
 }
 
-export function Player() {
-    const emitter = new Emitter();
-    this.on = (...args) => emitter.on(...args);
-    this.emit = (...args) => emitter.emit(...args);
-    this.once = (...args) => emitter.once(...args);
-
+export function Player(opt) {
+    this.src                = null;
     this.fileInfo           = null;
     this.pcmPlayer          = null;
     this.canvas             = null;
     this.webglPlayer        = null;
-    this.callback           = null;
     this.waitHeaderLength   = 524288;
     this.currentTime        = 0;
     this.duration           = 0;
@@ -103,7 +98,23 @@ export function Player() {
     this.streamReceivedLen  = 0;
     this.firstAudioFrame    = true;
     this.fetchController    = null;
-    this.streamPauseParam   = null;
+
+    Object.assign(this, opt);
+
+    if (this.el) {
+        if (typeof this.el === 'string') {
+            this.el = document.querySelector(this.el);
+        }
+        this.canvas = document.createElement('canvas');
+        this.canvas.style = 'width: 100%; height: 100%;';
+        this.el.appendChild(this.canvas);
+    }
+
+    const emitter = new Emitter();
+    this.on = (...args) => emitter.on(...args);
+    this.emit = (...args) => emitter.emit(...args);
+    this.once = (...args) => emitter.once(...args);
+
     this.logger             = new Logger("Player");
     this.initDownloadWorker();
     this.initDecodeWorker();
@@ -158,7 +169,7 @@ Player.prototype.initDecodeWorker = function () {
     }
 };
 
-Player.prototype.play = function (url, canvas, callback, waitHeaderLength, isStream) {
+Player.prototype.play = function (url = this.src, waitHeaderLength = this.waitHeaderLength, isStream = this.isStream) {
     this.logger.logInfo("Play " + url + ".");
 
     var ret = {
@@ -187,7 +198,7 @@ Player.prototype.play = function (url, canvas, callback, waitHeaderLength, isStr
             break;
         }
 
-        if (!canvas) {
+        if (!this.canvas) {
             ret = {
                 e: -2,
                 m: "Canvas not set"
@@ -224,11 +235,9 @@ Player.prototype.play = function (url, canvas, callback, waitHeaderLength, isStr
         }
 
         this.fileInfo = new FileInfo(url);
-        this.canvas = canvas;
-        this.callback = callback;
-        this.waitHeaderLength = waitHeaderLength || this.waitHeaderLength;
-        this.playerState = playerStatePlaying;
+        this.waitHeaderLength = waitHeaderLength;
         this.isStream = isStream;
+        this.playerState = playerStatePlaying;
         this.startTrackTimer();
         this.displayLoop();
 
@@ -276,13 +285,6 @@ Player.prototype.pauseStream = function () {
             m: "Not playing"
         };
         return ret;
-    }
-
-    this.streamPauseParam = {
-        url: this.fileInfo.url,
-        canvas: this.canvas,
-        callback: this.callback,
-        waitHeaderLength: this.waitHeaderLength
     }
 
     this.logger.logInfo("Stop in stream pause.");
@@ -339,7 +341,7 @@ Player.prototype.pause = function () {
 };
 
 Player.prototype.resumeStream = function () {
-    if (this.playerState != playerStateIdle || !this.streamPauseParam) {
+    if (this.playerState != playerStateIdle) {
         var ret = {
             e: -1,
             m: "Not pausing"
@@ -348,12 +350,7 @@ Player.prototype.resumeStream = function () {
     }
 
     this.logger.logInfo("Play in stream resume.");
-    this.play(this.streamPauseParam.url,
-              this.streamPauseParam.canvas,
-              this.streamPauseParam.callback,
-              this.streamPauseParam.waitHeaderLength,
-              true);
-    this.streamPauseParam = null;
+    this.play();
 
     var ret = {
         e: 0,
@@ -434,17 +431,16 @@ Player.prototype.stop = function () {
     this.stopTrackTimer();
     this.hideLoading();
 
-    this.fileInfo           = null;
-    this.canvas             = null;
+    // this.fileInfo           = null;
+    // this.canvas             = null;
     this.webglPlayer        = null;
-    this.callback           = null;
     this.currentTime        = 0;
-    this.duration           = 0;
-    this.pixFmt             = 0;
-    this.videoWidth         = 0;
-    this.videoHeight        = 0;
-    this.yLength            = 0;
-    this.uvLength           = 0;
+    // this.duration           = 0;
+    // this.pixFmt             = 0;
+    // this.videoWidth         = 0;
+    // this.videoHeight        = 0;
+    // this.yLength            = 0;
+    // this.uvLength           = 0;
     this.beginTimeOffset    = 0;
     this.decoderState       = decoderStateIdle;
     this.playerState        = playerStateIdle;
@@ -1046,7 +1042,7 @@ Player.prototype.updateTrackTime = function () {
         this.emit('timeupdate', currentPlayTime);
 
         // TODO: 不属性代码结构，暂时在此处理
-        if (currentPlayTime * 1000 > this.duration) {
+        if (!this.isStream && currentPlayTime * 1000 > this.duration) {
             this.stop();
             return;
         }
@@ -1092,9 +1088,7 @@ Player.prototype.reportPlayError = function (error, status, message) {
         message: message
     };
 
-    if (this.callback) {
-        this.callback(e);
-    }
+    this.emit('error', e);
 };
 
 Player.prototype.setLoadingDiv = function (loadingDiv) {

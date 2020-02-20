@@ -126,13 +126,9 @@ body {
 }
 
 .canvasDiv {
+    position: relative;
     width: 852px;
     height: 480px
-}
-
-#playCanvas {
-    width: 852px;
-    height: 480px;
 }
 
 .no-padding {
