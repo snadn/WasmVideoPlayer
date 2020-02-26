@@ -1,5 +1,7 @@
 export default class Emitter {
-    emap = new Map();
+    constructor() {
+        this.emap = new Map();
+    }
     on(name, fn) {
         if (!fn || typeof fn !== 'function') {
             throw new Error('fn error');

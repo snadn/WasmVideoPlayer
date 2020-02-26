@@ -4,8 +4,14 @@ self.Module = {
     }
 };
 
-self.importScripts("common.js");
-self.importScripts("libffmpeg.js");
+if (typeof require === 'function') {
+    Object.assign(self, require('./common.mjs'));
+    const libffmpeg = require('./libffmpeg.mjs').default;
+    libffmpeg(Module);
+} else {
+    importScripts('./common.js');
+    importScripts('./libffmpeg.js');
+}
 
 function Decoder() {
     this.logger             = new Logger("Decoder");

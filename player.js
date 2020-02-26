@@ -123,7 +123,14 @@ export function Player(opt) {
 Player.prototype.initDownloadWorker = function () {
     var self = this;
     // this.downloadWorker = new Worker("downloader.worker.mjs", { type: "module" });
-    this.downloadWorker = new Worker("downloader.worker.js");
+
+    let Wk = function (){
+        return new Worker('./downloader.worker.js');
+    };
+    if (typeof require === 'function') {
+        Wk = require('./downloader.worker.js');
+    }
+    this.downloadWorker = new Wk();
     this.downloadWorker.onmessage = function (evt) {
         var objData = evt.data;
         switch (objData.t) {
@@ -140,7 +147,13 @@ Player.prototype.initDownloadWorker = function () {
 Player.prototype.initDecodeWorker = function () {
     var self = this;
     // this.decodeWorker = new Worker("decoder.worker.mjs", { type: "module" });
-    this.decodeWorker = new Worker("decoder.worker.js");
+    let Wk = function (){
+        return new Worker('./decoder.worker.js');
+    };
+    if (typeof require === 'function') {
+        Wk = require('./decoder.worker.js');
+    }
+    this.decodeWorker = new Wk();
     this.decodeWorker.onmessage = function (evt) {
         var objData = evt.data;
         switch (objData.t) {

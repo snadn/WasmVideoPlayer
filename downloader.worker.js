@@ -1,4 +1,8 @@
-self.importScripts("common.js");
+if (typeof require === 'function') {
+    Object.assign(self, require('./common.mjs'));
+} else {
+    importScripts('./common.js');
+}
 
 function Downloader() {
     this.logger = new Logger("Downloader");
