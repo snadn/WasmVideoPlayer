@@ -1,3 +1,4 @@
+const kError = -1;
 //Player request.
 const kPlayVideoReq         = 0;
 const kPauseVideoReq        = 1;

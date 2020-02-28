@@ -1,5 +1,6 @@
 import Emitter from './emitter.mjs';
 import {
+    kError,
     kGetFileInfoReq,
     kDownloadFileReq,
     kGetFileInfoRsp,
@@ -157,6 +158,9 @@ Player.prototype.initDecodeWorker = function () {
     this.decodeWorker.onmessage = function (evt) {
         var objData = evt.data;
         switch (objData.t) {
+            case kError:
+                self.reportPlayError(objData, 0, 'decode error');
+                break;
             case kInitDecoderRsp:
                 self.onInitDecoder(objData);
                 break;
@@ -957,7 +961,7 @@ Player.prototype.displayLoop = function() {
 
     if (this.bufferFrame.length == 0) {
         if (this.decoderState == decoderStateFinished) {
-            this.reportPlayError(1, 0, "Finished");
+            // this.reportPlayError(1, 0, "Finished");
             this.stop();
         } else {
             this.startBuffering();
@@ -988,7 +992,7 @@ Player.prototype.downloadOneChunk = function () {
 
     var start = this.fileInfo.offset;
     if (start >= this.fileInfo.size) {
-        this.logger.logError("Reach file end.");
+        this.logger.logInfo("Reach file end.");
         this.stopDownloadTimer();
         this.emit('canplaythrough');
         return;

@@ -28,7 +28,6 @@ import libffmpeg from "./libffmpeg.mjs";
 
 const Module = {
     onRuntimeInitialized: function () {
-        console.log('onRuntimeInitialized')
         onWasmLoaded();
     }
 };
@@ -181,33 +180,41 @@ Decoder.prototype.seekTo = function (ms) {
 
 Decoder.prototype.processReq = function (req) {
     //this.logger.logInfo("processReq " + req.t + ".");
-    switch (req.t) {
-        case kInitDecoderReq:
-            this.initDecoder(req.s, req.c);
-            break;
-        case kUninitDecoderReq:
-            this.uninitDecoder();
-            break;
-        case kOpenDecoderReq:
-            this.openDecoder();
-            break;
-        case kCloseDecoderReq:
-            this.closeDecoder();
-            break;
-        case kStartDecodingReq:
-            this.startDecoding(req.i);
-            break;
-        case kPauseDecodingReq:
-            this.pauseDecoding();
-            break;
-        case kFeedDataReq:
-            this.sendData(req.d);
-            break;
-        case kSeekToReq:
-            this.seekTo(req.ms);
-            break;
-        default:
-            this.logger.logError("Unsupport messsage " + req.t);
+    try {
+        switch (req.t) {
+            case kInitDecoderReq:
+                this.initDecoder(req.s, req.c);
+                break;
+            case kUninitDecoderReq:
+                this.uninitDecoder();
+                break;
+            case kOpenDecoderReq:
+                this.openDecoder();
+                break;
+            case kCloseDecoderReq:
+                this.closeDecoder();
+                break;
+            case kStartDecodingReq:
+                this.startDecoding(req.i);
+                break;
+            case kPauseDecodingReq:
+                this.pauseDecoding();
+                break;
+            case kFeedDataReq:
+                this.sendData(req.d);
+                break;
+            case kSeekToReq:
+                this.seekTo(req.ms);
+                break;
+            default:
+                this.logger.logError("Unsupport messsage " + req.t);
+        }
+    } catch(err) {
+        this.logger.logError("Unsupport messsage " + err.message);
+        self.postMessage({
+            t: kError,
+            m: err.message,
+        });
     }
 };
 
@@ -276,12 +283,10 @@ self.onmessage = function (evt) {
     self.decoder.processReq(req);
 };
 
-let onWasmLoaded = () => {
-    onWasmLoaded = () => {};
+function onWasmLoaded() {
     if (self.decoder) {
         self.decoder.onWasmLoaded();
     } else {
         console.log("[ER] No decoder!");
     }
 }
-setTimeout(onWasmLoaded, 1000);

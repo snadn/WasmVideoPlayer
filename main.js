@@ -28,6 +28,7 @@ const el = document.querySelector('.canvasDiv');
 //Player object.
 const player = new Player({
     el,
+    // waitHeaderLength: 402847
     // src: /* 'video/C31-1.mp4', //  */defaultProtos.http.url,
 });
 
@@ -50,10 +51,7 @@ player.on('ended', () => {
     el.src = "img/play.png";
 });
 player.on('error', (e) => {
-    console.log("play error " + e.error + " status " + e.status + ".");
-    if (e.error == 1) {
-        logger.logInfo("Finished.");
-    }
+    console.error(e.error, "play error " + e.message + " status " + e.status + ".");
 });
 
 var timeTrack = document.getElementById("timeTrack");
