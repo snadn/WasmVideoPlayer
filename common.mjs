@@ -36,7 +36,7 @@ export const kSeekToReq            = 7;
 
 //Decoder response.
 export const kInitDecoderRsp       = 0;
-const kUninitDecoderRsp     = 1;
+export const kUninitDecoderRsp     = 1;
 export const kOpenDecoderRsp       = 2;
 export const kCloseDecoderRsp      = 3;
 export const kVideoFrame           = 4;

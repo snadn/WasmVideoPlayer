@@ -49,6 +49,7 @@ player.on('pause', () => {
 player.on('ended', () => {
     var el = document.getElementById("btnPlayVideo");
     el.src = "img/play.png";
+    console.log('player:ended')
 });
 player.on('error', (e) => {
     console.error(e.error, "play error " + e.message + " status " + e.status + ".");

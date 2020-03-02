@@ -37,8 +37,8 @@ export default class Emitter {
             throw new Error('fn error');
         }
         const fnwrap = (...args) => {
+            this.off(name, fnwrap);
             fn.apply(this, args);
-            this.off(fnwrap);
         }
 
         this.on(name, fnwrap);

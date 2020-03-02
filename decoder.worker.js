@@ -46,49 +46,57 @@ Decoder.prototype.uninitDecoder = function () {
         Module._free(this.cacheBuffer);
         this.cacheBuffer = null;
     }
+    var objData = {
+        t: kUninitDecoderRsp,
+        e: ret
+    };
+    self.postMessage(objData);
 };
 
 Decoder.prototype.openDecoder = function () {
     var paramCount = 7, paramSize = 4;
     var paramByteBuffer = Module._malloc(paramCount * paramSize);
-    var ret = Module._openDecoder(paramByteBuffer, paramCount, this.videoCallback, this.audioCallback, this.requestCallback);
-    this.logger.logInfo("openDecoder return " + ret);
+    try {
+        var ret = Module._openDecoder(paramByteBuffer, paramCount, this.videoCallback, this.audioCallback, this.requestCallback);
+        this.logger.logInfo("openDecoder return " + ret);
 
-    if (ret == 0) {
-        var paramIntBuff    = paramByteBuffer >> 2;
-        var paramArray      = Module.HEAP32.subarray(paramIntBuff, paramIntBuff + paramCount);
-        var duration        = paramArray[0];
-        var videoPixFmt     = paramArray[1];
-        var videoWidth      = paramArray[2];
-        var videoHeight     = paramArray[3];
-        var audioSampleFmt  = paramArray[4];
-        var audioChannels   = paramArray[5];
-        var audioSampleRate = paramArray[6];
+        if (ret == 0) {
+            var paramIntBuff    = paramByteBuffer >> 2;
+            var paramArray      = Module.HEAP32.subarray(paramIntBuff, paramIntBuff + paramCount);
+            var duration        = paramArray[0];
+            var videoPixFmt     = paramArray[1];
+            var videoWidth      = paramArray[2];
+            var videoHeight     = paramArray[3];
+            var audioSampleFmt  = paramArray[4];
+            var audioChannels   = paramArray[5];
+            var audioSampleRate = paramArray[6];
 
-        var objData = {
-            t: kOpenDecoderRsp,
-            e: ret,
-            v: {
-                d: duration,
-                p: videoPixFmt,
-                w: videoWidth,
-                h: videoHeight
-            },
-            a: {
-                f: audioSampleFmt,
-                c: audioChannels,
-                r: audioSampleRate
-            }
-        };
-        self.postMessage(objData);
-    } else {
-        var objData = {
-            t: kOpenDecoderRsp,
-            e: ret
-        };
-        self.postMessage(objData);
+            var objData = {
+                t: kOpenDecoderRsp,
+                e: ret,
+                v: {
+                    d: duration,
+                    p: videoPixFmt,
+                    w: videoWidth,
+                    h: videoHeight
+                },
+                a: {
+                    f: audioSampleFmt,
+                    c: audioChannels,
+                    r: audioSampleRate
+                }
+            };
+            self.postMessage(objData);
+        } else {
+            var objData = {
+                t: kOpenDecoderRsp,
+                e: ret
+            };
+            self.postMessage(objData);
+        }
+    } finally {
+        Module._free(paramByteBuffer);
     }
-    Module._free(paramByteBuffer);
 };
 
 Decoder.prototype.closeDecoder = function () {
@@ -190,7 +198,7 @@ Decoder.prototype.processReq = function (req) {
                 this.logger.logError("Unsupport messsage " + req.t);
         }
     } catch(err) {
-        this.logger.logError("Unsupport messsage " + err.message);
+        this.logger.logError("process error: " + err.message);
         self.postMessage({
             t: kError,
             m: err.message,

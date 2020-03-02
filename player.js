@@ -17,6 +17,7 @@ import {
     kSeekToReq,
     kInitDecoderRsp,
     kOpenDecoderRsp,
+    kUninitDecoderRsp,
     kVideoFrame,
     kAudioFrame,
     kDecodeFinishedEvt,
@@ -61,6 +62,7 @@ export function Player(opt) {
     this.canvas             = null;
     this.webglPlayer        = null;
     this.waitHeaderLength   = 524288;
+    this.loadAllWhenDecodeFail = true;
     this.currentTime        = 0;
     this.duration           = 0;
     this.pixFmt             = 0;
@@ -115,6 +117,7 @@ export function Player(opt) {
     this.on = (...args) => emitter.on(...args);
     this.emit = (...args) => emitter.emit(...args);
     this.once = (...args) => emitter.once(...args);
+    this.off = (...args) => emitter.off(...args);
 
     this.logger             = new Logger("Player");
     this.initDownloadWorker();
@@ -159,6 +162,7 @@ Player.prototype.initDecodeWorker = function () {
         var objData = evt.data;
         switch (objData.t) {
             case kError:
+                self.emit('decode:error', objData);
                 self.reportPlayError(objData, 0, 'decode error');
                 break;
             case kInitDecoderRsp:
@@ -181,6 +185,9 @@ Player.prototype.initDecodeWorker = function () {
                 break;
             case kSeekToRsp:
                 self.onSeekToRsp(objData.r);
+                break;
+            case kUninitDecoderRsp:
+                self.emit('decode:uninit', objData);
                 break;
         }
     }
@@ -636,16 +643,42 @@ Player.prototype.onFileData = function (data, start, end, seq) {
 };
 
 Player.prototype.onFileDataUnderDecoderIdle = function () {
-    if (this.fileInfo.offset >= this.waitHeaderLength || (!this.isStream && this.fileInfo.offset == this.fileInfo.size)) {
+    if (this.decoderState !== decoderStateInitializing && this.fileInfo.offset >= this.waitHeaderLength || (!this.isStream && this.fileInfo.offset == this.fileInfo.size)) {
         this.logger.logInfo("Opening decoder.");
         this.decoderState = decoderStateInitializing;
         var req = {
             t: kOpenDecoderReq
         };
-        this.decodeWorker.postMessage(req);
-    }
+        if (this.loadAllWhenDecodeFail && this.waitHeaderLength < this.fileInfo.size) {
+            const waitHeaderLength = this.waitHeaderLength;
+            const retry = () => {
+                this.waitHeaderLength = this.fileInfo.size;
+                this.fileInfo.offset = 0;
+                this.decoderState = decoderStateIdle;
 
-    this.downloadOneChunk();
+                this.decodeWorker.postMessage({
+                    t: kUninitDecoderReq
+                });
+                this.decodeWorker.postMessage({
+                    t: kInitDecoderReq,
+                    s: this.fileInfo.size,
+                    c: this.fileInfo.chunkSize
+                });
+                this.downloadOneChunk();
+            };
+            this.once('decode:error', retry);
+            this.once('decode:open', () => {
+                this.waitHeaderLength = waitHeaderLength;
+                this.off('decode:error', retry);
+                this.downloadOneChunk();
+            });
+        } else {
+            this.downloadOneChunk();
+        }
+        this.decodeWorker.postMessage(req);
+    } else {
+        this.downloadOneChunk();
+    }
 };
 
 Player.prototype.onFileDataUnderDecoderInitializing = function () {
@@ -684,6 +717,7 @@ Player.prototype.onOpenDecoder = function (objData) {
         this.decoderState = decoderStateReady;
         this.logger.logInfo("Decoder ready now.");
         this.startDecoding();
+        this.emit('decode:open');
     } else {
         this.reportPlayError(objData.e);
     }
