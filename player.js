@@ -122,6 +122,16 @@ export function Player(opt) {
     this.logger             = new Logger("Player");
     this.initDownloadWorker();
     this.initDecodeWorker();
+
+    let playerStateOfvisible;
+    this.registerVisibilityEvent((visible) => {
+        if (visible) {
+            playerStateOfvisible === playerStatePlaying && this.resume();
+        } else {
+            playerStateOfvisible = this.playerState;
+            this.playerState === playerStatePlaying && this.pause();
+        }
+    });
 }
 
 Player.prototype.initDownloadWorker = function () {
@@ -284,15 +294,6 @@ Player.prototype.play = function (url = this.src, waitHeaderLength = this.waitHe
                 st: 200
             });
         }
-
-        var self = this;
-        this.registerVisibilityEvent(function(visible) {
-            if (visible) {
-                self.resume();
-            } else {
-                self.pause();
-            }
-        });
 
         this.buffering = true;
         this.showLoading();
